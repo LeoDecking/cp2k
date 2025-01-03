@@ -96,6 +96,14 @@ CONTAINS
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 
+      CALL keyword_create(keyword, __LOCATION__, name="INTENSITIES", &
+                          description="Intensities of the electric field in a.u, one per frame", &
+                          usage="INTENSITIES {real} {real} .. {real}", &
+                          n_var=-1, type_of_var=real_t, default_r_vals=(/0.0_dp/))
+
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
    END SUBROUTINE create_per_efield_section
 ! **************************************************************************************************
 !> \brief creates the section for time dependent nonperiodic fields
