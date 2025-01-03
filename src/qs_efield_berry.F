@@ -263,7 +263,7 @@ CONTAINS
          strength = dft_control%period_efield%strengths(qs_env%sim_step + 1)
 
          ! TODO: remove
-         write(*, "(A, I0, A, F8.4)") "[PERIODIC FIELD] Step: ", qs_env%sim_step, " Periodic field strength: ", strength
+         write(*, "(A, I0, A, F12.10)") "[PERIODIC FIELD] Step: ", qs_env%sim_step, " Periodic field strength: ", strength
       END IF
 
       fieldpol = dft_control%period_efield%polarisation
@@ -754,7 +754,7 @@ CONTAINS
       IF (ALLOCATED(dft_control%period_efield%strengths)) THEN
          strength = dft_control%period_efield%strengths(qs_env%sim_step + 1)
          ! TODO: remove
-         write(*, "(A, I0, A, F8.4)") "[PERIODIC FIELD] Step: ", qs_env%sim_step, " Periodic field strength: ", strength
+         write(*, "(A, I0, A, F12.10)") "[PERIODIC FIELD] Step: ", qs_env%sim_step, " Periodic field strength: ", strength
       END IF
 
       fieldpol = dft_control%period_efield%polarisation
