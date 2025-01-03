@@ -120,14 +120,21 @@ CONTAINS
       CALL get_qs_env(qs_env, s_mstruct_changed=s_mstruct_changed, &
                       dft_control=dft_control)
 
-      IF (dft_control%apply_period_efield) THEN
+      if_apply: IF (dft_control%apply_period_efield) THEN
+         IF (ALLOCATED(dft_control%period_efield%strengths)) THEN
+            IF (SIZE(dft_control%period_efield%strengths) <= qs_env%sim_step) THEN
+               write(*, *) "[PERIODIC FIELD] No periodic field anymore in step", qs_env%sim_step
+               EXIT if_apply
+            END IF
+         END IF
+
          IF (s_mstruct_changed) CALL qs_efield_integrals(qs_env)
          IF (dft_control%period_efield%displacement_field) THEN
             CALL qs_dispfield_derivatives(qs_env, just_energy, calculate_forces)
          ELSE
             CALL qs_efield_derivatives(qs_env, just_energy, calculate_forces)
          END IF
-      END IF
+      END IF if_apply
 
       CALL timestop(handle)
 
@@ -199,7 +206,7 @@ CONTAINS
       REAL(dp)                                           :: charge, ci(3), cqi(3), dab, dd, &
                                                             ener_field, f0, fab, fieldpol(3), &
                                                             focc, fpolvec(3), hmat(3, 3), occ, &
-                                                            qi(3), ti(3)
+                                                            qi(3), strength, ti(3)
       REAL(dp), DIMENSION(3)                             :: forcea, forceb, kvec, ra, rab, rb, ria
       REAL(dp), DIMENSION(:, :), POINTER                 :: cosab, iblock, rblock, sinab, work
       REAL(dp), DIMENSION(:, :, :), POINTER              :: dcosab, dsinab
@@ -250,9 +257,18 @@ CONTAINS
          CPABORT("Stress tensor for periodic E-field not implemented")
       END IF
 
+
+      strength = dft_control%period_efield%strength
+      IF (ALLOCATED(dft_control%period_efield%strengths)) THEN
+         strength = dft_control%period_efield%strengths(qs_env%sim_step + 1)
+
+         ! TODO: remove
+         write(*, "(A, I0, A, F8.4)") "[PERIODIC FIELD] Step: ", qs_env%sim_step, " Periodic field strength: ", strength
+      END IF
+
       fieldpol = dft_control%period_efield%polarisation
       fieldpol = fieldpol/SQRT(DOT_PRODUCT(fieldpol, fieldpol))
-      fieldpol = -fieldpol*dft_control%period_efield%strength
+      fieldpol = -fieldpol*strength
       hmat = cell%hmat(:, :)/twopi
       DO idir = 1, 3
          fpolvec(idir) = fieldpol(1)*hmat(1, idir) + fieldpol(2)*hmat(2, idir) + fieldpol(3)*hmat(3, idir)
@@ -680,7 +696,7 @@ CONTAINS
       REAL(dp)                                           :: charge, ci(3), cqi(3), dab, dd, di(3), &
                                                             ener_field, fab, fieldpol(3), focc, &
                                                             hmat(3, 3), occ, omega, qi(3), &
-                                                            rlog(3), zlog(3)
+                                                            rlog(3), strength, zlog(3)
       REAL(dp), DIMENSION(3)                             :: dfilter, forcea, forceb, kvec, ra, rab, &
                                                             rb, ria
       REAL(dp), DIMENSION(:, :), POINTER                 :: cosab, iblock, rblock, sinab, work
@@ -734,9 +750,16 @@ CONTAINS
 
       dfilter(1:3) = dft_control%period_efield%d_filter(1:3)
 
+      strength = dft_control%period_efield%strength
+      IF (ALLOCATED(dft_control%period_efield%strengths)) THEN
+         strength = dft_control%period_efield%strengths(qs_env%sim_step + 1)
+         ! TODO: remove
+         write(*, "(A, I0, A, F8.4)") "[PERIODIC FIELD] Step: ", qs_env%sim_step, " Periodic field strength: ", strength
+      END IF
+
       fieldpol = dft_control%period_efield%polarisation
       fieldpol = fieldpol/SQRT(DOT_PRODUCT(fieldpol, fieldpol))
-      fieldpol = fieldpol*dft_control%period_efield%strength
+      fieldpol = fieldpol*strength
 
       omega = cell%deth
       hmat = cell%hmat(:, :)/(twopi*omega)

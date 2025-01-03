@@ -513,6 +513,25 @@ CONTAINS
          dft_control%period_efield%displacement_field = .FALSE.
          CALL section_vals_val_get(tmp_section, "DISPLACEMENT_FIELD", &
                                    l_val=dft_control%period_efield%displacement_field)
+
+         CALL section_vals_val_get(tmp_section, "INTENSITIES", r_vals=pol)
+         
+         IF (SIZE(pol) > 1 .OR. pol(1) /= 0.0_dp) THEN
+            IF (dft_control%period_efield%strength /= 0.0_dp) THEN
+               CPABORT("[PERIODIC FIELD] Only one of INTENSITY or INTENSITIES can be specified.")
+            END IF
+
+            write(*, "(A, I0)") "[PERIODIC FIELD] INTENSITIES: ", SIZE(pol)
+
+            ALLOCATE(dft_control%period_efield%strengths(SIZE(pol)))
+            dft_control%period_efield%strengths(1:SIZE(pol)) = pol(1:SIZE(pol))
+
+            DO irep=1, SIZE(POL)
+               write(*,*) irep-1, dft_control%period_efield%strengths(irep)
+            END DO
+         END IF
+
+
          ! periodic fields don't work with RTP
          CPASSERT(.NOT. do_rtp)
          IF (dft_control%period_efield%displacement_field) THEN
