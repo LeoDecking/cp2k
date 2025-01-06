@@ -531,6 +531,22 @@ CONTAINS
             END DO
          END IF
 
+         CALL section_vals_val_get(tmp_section, "START_FRAME", &
+                                   i_val=dft_control%period_efield%start_frame)
+         CALL section_vals_val_get(tmp_section, "END_FRAME", &
+                                   i_val=dft_control%period_efield%end_frame)
+
+         IF (dft_control%period_efield%end_frame /= -1) THEN
+            IF (dft_control%period_efield%start_frame > dft_control%period_efield%end_frame) THEN
+               CPABORT("[PERIODIC FIELD] START_FRAME > END_FRAME")
+            ELSE IF (dft_control%period_efield%start_frame < 0) THEN
+               CPABORT("[PERIODIC FIELD] START_FRAME < 0")
+            ELSE IF (MOD(dft_control%period_efield%end_frame - dft_control%period_efield%start_frame + 1, SIZE(pol)) /= 0) THEN
+               CALL cp_abort(__LOCATION__, &
+                     "[PERIODIC FIELD] Number of active frames must be a multiple of the number of intensities")
+            END IF
+         END IF
+
 
          ! periodic fields don't work with RTP
          CPASSERT(.NOT. do_rtp)

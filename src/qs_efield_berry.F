@@ -121,11 +121,13 @@ CONTAINS
                       dft_control=dft_control)
 
       if_apply: IF (dft_control%apply_period_efield) THEN
-         IF (ALLOCATED(dft_control%period_efield%strengths)) THEN
-            IF (SIZE(dft_control%period_efield%strengths) <= qs_env%sim_step) THEN
-               write(*, *) "[PERIODIC FIELD] No periodic field anymore in step", qs_env%sim_step
-               EXIT if_apply
-            END IF
+         IF (dft_control%period_efield%start_frame > qs_env%sim_step) THEN
+            write(*, *) "[PERIODIC FIELD] No periodic field yet in step", qs_env%sim_step
+            EXIT if_apply
+         END IF
+         IF (dft_control%period_efield%end_frame /= -1 .AND. dft_control%period_efield%end_frame < qs_env%sim_step) THEN
+            write(*, *) "[PERIODIC FIELD] No periodic field anymore in step", qs_env%sim_step
+            EXIT if_apply
          END IF
 
          IF (s_mstruct_changed) CALL qs_efield_integrals(qs_env)
@@ -260,10 +262,11 @@ CONTAINS
 
       strength = dft_control%period_efield%strength
       IF (ALLOCATED(dft_control%period_efield%strengths)) THEN
-         strength = dft_control%period_efield%strengths(qs_env%sim_step + 1)
+         strength = dft_control%period_efield%strengths(MOD(qs_env%sim_step &
+                     - dft_control%period_efield%start_frame, SIZE(dft_control%period_efield%strengths)) + 1)
 
          ! TODO: remove
-         write(*, "(A, I0, A, F12.10)") "[PERIODIC FIELD] Step: ", qs_env%sim_step, " Periodic field strength: ", strength
+         write(*, "(A, I0, A, F20.10)") "[PERIODIC FIELD] Step: ", qs_env%sim_step, " Periodic field strength: ", strength
       END IF
 
       fieldpol = dft_control%period_efield%polarisation
@@ -752,9 +755,10 @@ CONTAINS
 
       strength = dft_control%period_efield%strength
       IF (ALLOCATED(dft_control%period_efield%strengths)) THEN
-         strength = dft_control%period_efield%strengths(qs_env%sim_step + 1)
-         ! TODO: remove
-         write(*, "(A, I0, A, F12.10)") "[PERIODIC FIELD] Step: ", qs_env%sim_step, " Periodic field strength: ", strength
+         strength = dft_control%period_efield%strengths(MOD(qs_env%sim_step &
+                     - dft_control%period_efield%start_frame, SIZE(dft_control%period_efield%strengths)) + 1)
+         !TODO: remove
+         write(*, "(A, I0, A, F20.10)") "[PERIODIC FIELD] Step: ", qs_env%sim_step, " Periodic field strength: ", strength
       END IF
 
       fieldpol = dft_control%period_efield%polarisation

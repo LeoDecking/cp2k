@@ -89,20 +89,36 @@ CONTAINS
       CALL keyword_release(keyword)
 
       CALL keyword_create(keyword, __LOCATION__, name="D_FILTER", &
-                          description="Filter for displacement field (x,y,z-dirction)", &
+                          description="Filter for displacement field (x,y,z-direction)", &
                           usage="D_FILTER  1.0 0.0 0.0", &
                           repeats=.FALSE., n_var=3, &
                           type_of_var=real_t, default_r_vals=(/1.0_dp, 1.0_dp, 1.0_dp/))
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 
+
       CALL keyword_create(keyword, __LOCATION__, name="INTENSITIES", &
                           description="Intensities of the electric field in a.u, one per frame", &
                           usage="INTENSITIES {real} {real} .. {real}", &
                           n_var=-1, type_of_var=real_t, default_r_vals=(/0.0_dp/))
-
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, name="START_FRAME", &
+                          description="First frame the field is applied", &
+                          usage="start_frame 0", &
+                          default_i_val=0)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+    
+      CALL keyword_create(keyword, __LOCATION__, name="END_FRAME", &
+                          description="Last frame the field is applied (-1: no end)", &
+                          usage="end_frame -1", &
+                          default_i_val=-1)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+
 
    END SUBROUTINE create_per_efield_section
 ! **************************************************************************************************
