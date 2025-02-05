@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2024 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2025 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -53,7 +53,7 @@ MODULE cp_cfm_basic_linalg
              cp_cfm_rot_rows, &
              cp_cfm_rot_cols, &
              cp_cfm_det, & ! determinant of a complex matrix with correct sign
-             cp_cfm_upper_to_full
+             cp_cfm_uplo_to_full
 
    REAL(kind=dp), EXTERNAL :: zlange, pzlange
 
@@ -455,7 +455,7 @@ CONTAINS
 !>    The original content of the matrix is destroyed.
 ! **************************************************************************************************
    SUBROUTINE cp_cfm_lu_decompose(matrix_a, determinant)
-      TYPE(cp_cfm_type), INTENT(IN)                   :: matrix_a
+      TYPE(cp_cfm_type), INTENT(IN)                      :: matrix_a
       COMPLEX(kind=dp), INTENT(out)                      :: determinant
 
       CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_lu_decompose'
@@ -528,7 +528,7 @@ CONTAINS
       DEALLOCATE (ipivot)
 
       CALL timestop(handle)
-   END SUBROUTINE
+   END SUBROUTINE cp_cfm_lu_decompose
 
 ! **************************************************************************************************
 !> \brief Performs one of the matrix-matrix operations:
@@ -565,7 +565,7 @@ CONTAINS
       COMPLEX(kind=dp), INTENT(in)                       :: alpha
       TYPE(cp_cfm_type), INTENT(IN)                      :: matrix_a, matrix_b
       COMPLEX(kind=dp), INTENT(in)                       :: beta
-      TYPE(cp_cfm_type), INTENT(IN)                   :: matrix_c
+      TYPE(cp_cfm_type), INTENT(IN)                      :: matrix_c
       INTEGER, INTENT(in), OPTIONAL                      :: a_first_col, a_first_row, b_first_col, &
                                                             b_first_row, c_first_col, c_first_row
 
@@ -584,36 +584,23 @@ CONTAINS
       b => matrix_b%local_data
       c => matrix_c%local_data
 
-      IF (PRESENT(a_first_row)) THEN
-         i_a = a_first_row
-      ELSE
-         i_a = 1
-      END IF
-      IF (PRESENT(a_first_col)) THEN
-         j_a = a_first_col
-      ELSE
-         j_a = 1
-      END IF
-      IF (PRESENT(b_first_row)) THEN
-         i_b = b_first_row
-      ELSE
-         i_b = 1
-      END IF
-      IF (PRESENT(b_first_col)) THEN
-         j_b = b_first_col
-      ELSE
-         j_b = 1
-      END IF
-      IF (PRESENT(c_first_row)) THEN
-         i_c = c_first_row
-      ELSE
-         i_c = 1
-      END IF
-      IF (PRESENT(c_first_col)) THEN
-         j_c = c_first_col
-      ELSE
-         j_c = 1
-      END IF
+      i_a = 1
+      IF (PRESENT(a_first_row)) i_a = a_first_row
+
+      j_a = 1
+      IF (PRESENT(a_first_col)) j_a = a_first_col
+
+      i_b = 1
+      IF (PRESENT(b_first_row)) i_b = b_first_row
+
+      j_b = 1
+      IF (PRESENT(b_first_col)) j_b = b_first_col
+
+      i_c = 1
+      IF (PRESENT(c_first_row)) i_c = c_first_row
+
+      j_c = 1
+      IF (PRESENT(c_first_col)) j_c = c_first_col
 
 #if defined(__parallel)
       desca(:) = matrix_a%matrix_struct%descriptor(:)
@@ -627,6 +614,7 @@ CONTAINS
       ldb = SIZE(b, 1)
       ldc = SIZE(c, 1)
 
+      ! consider zgemm3m
       CALL zgemm(transa, transb, m, n, k, alpha, a(i_a, j_a), &
                  lda, b(i_b, j_b), ldb, beta, c(i_c, j_c), ldc)
 #endif
@@ -642,7 +630,7 @@ CONTAINS
 !> \author Joost VandeVondele
 ! **************************************************************************************************
    SUBROUTINE cp_cfm_column_scale(matrix_a, scaling)
-      TYPE(cp_cfm_type), INTENT(IN)                   :: matrix_a
+      TYPE(cp_cfm_type), INTENT(IN)                      :: matrix_a
       COMPLEX(kind=dp), DIMENSION(:), INTENT(in)         :: scaling
 
       CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_column_scale'
@@ -741,7 +729,7 @@ CONTAINS
 !> \author Florian Schiffmann
 ! **************************************************************************************************
    SUBROUTINE cp_cfm_solve(matrix_a, general_a, determinant)
-      TYPE(cp_cfm_type), INTENT(IN)                   :: matrix_a, general_a
+      TYPE(cp_cfm_type), INTENT(IN)                      :: matrix_a, general_a
       COMPLEX(kind=dp), OPTIONAL                         :: determinant
 
       CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_solve'
@@ -833,7 +821,7 @@ CONTAINS
 !> \author Lianheng Tong
 ! **************************************************************************************************
    SUBROUTINE cp_cfm_lu_invert(matrix, info_out)
-      TYPE(cp_cfm_type), INTENT(IN)                   :: matrix
+      TYPE(cp_cfm_type), INTENT(IN)                      :: matrix
       INTEGER, INTENT(out), OPTIONAL                     :: info_out
 
       CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_lu_invert'
@@ -1070,7 +1058,7 @@ CONTAINS
 !> \author MI
 ! **************************************************************************************************
    SUBROUTINE cp_cfm_triangular_invert(matrix_a, uplo, info_out)
-      TYPE(cp_cfm_type), INTENT(IN)         :: matrix_a
+      TYPE(cp_cfm_type), INTENT(IN)            :: matrix_a
       CHARACTER, INTENT(in), OPTIONAL          :: uplo
       INTEGER, INTENT(out), OPTIONAL           :: info_out
 
@@ -1079,7 +1067,7 @@ CONTAINS
       CHARACTER                                :: unit_diag, my_uplo
       INTEGER                                  :: handle, info, ncol_global
       COMPLEX(kind=dp), DIMENSION(:, :), &
-         POINTER                                :: a
+         POINTER                               :: a
 #if defined(__parallel)
       INTEGER, DIMENSION(9)                    :: desca
 #endif
@@ -1122,7 +1110,7 @@ CONTAINS
    SUBROUTINE cp_cfm_transpose(matrix, trans, matrixt)
       TYPE(cp_cfm_type), INTENT(IN)                      :: matrix
       CHARACTER, INTENT(in)                              :: trans
-      TYPE(cp_cfm_type), INTENT(IN)                   :: matrixt
+      TYPE(cp_cfm_type), INTENT(IN)                      :: matrixt
 
       CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_transpose'
 
@@ -1130,7 +1118,7 @@ CONTAINS
       INTEGER                                            :: handle, ncol_global, nrow_global
 #if defined(__parallel)
       INTEGER, DIMENSION(9)                              :: desca, descc
-#else
+#elif !defined(__MKL)
       INTEGER                                            :: ii, jj
 #endif
 
@@ -1160,6 +1148,8 @@ CONTAINS
       CASE DEFAULT
          CPABORT("trans only accepts 'T' or 'C'")
       END SELECT
+#elif defined(__MKL)
+      CALL mkl_zomatcopy('C', trans, nrow_global, ncol_global, 1.0_dp, aa(1, 1), nrow_global, cc(1, 1), ncol_global)
 #else
       SELECT CASE (trans)
       CASE ('T')
@@ -1348,17 +1338,20 @@ CONTAINS
 !> \brief ...
 !> \param matrix ...
 !> \param workspace ...
+!> \param uplo triangular format; defaults to 'U'
 !> \par History
 !>      12.2024 Added optional workspace as input [Rocco Meli]
 !> \author Jan Wilhelm
 ! **************************************************************************************************
-   SUBROUTINE cp_cfm_upper_to_full(matrix, workspace)
+   SUBROUTINE cp_cfm_uplo_to_full(matrix, workspace, uplo)
 
       TYPE(cp_cfm_type), INTENT(IN)                      :: matrix
-      TYPE(cp_cfm_type), OPTIONAL                        :: workspace
+      TYPE(cp_cfm_type), INTENT(IN), OPTIONAL            :: workspace
+      CHARACTER, INTENT(IN), OPTIONAL                    :: uplo
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_cfm_upper_to_full'
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_cfm_uplo_to_full'
 
+      CHARACTER                                          :: myuplo
       INTEGER                                            :: handle, i_global, iiB, j_global, jjB, &
                                                             ncol_local, nrow_local
       INTEGER, DIMENSION(:), POINTER                     :: col_indices, row_indices
@@ -1372,6 +1365,9 @@ CONTAINS
          work = workspace
       END IF
 
+      myuplo = 'U'
+      IF (PRESENT(uplo)) myuplo = uplo
+
       ! get info of fm_mat_Q
       CALL cp_cfm_get_info(matrix=matrix, &
                            nrow_local=nrow_local, &
@@ -1383,10 +1379,9 @@ CONTAINS
          j_global = col_indices(jjB)
          DO iiB = 1, nrow_local
             i_global = row_indices(iiB)
-            IF (j_global < i_global) THEN
+            IF (MERGE(j_global < i_global, j_global > i_global, (myuplo == "U") .OR. (myuplo == "u"))) THEN
                matrix%local_data(iiB, jjB) = z_zero
-            END IF
-            IF (j_global == i_global) THEN
+            ELSE IF (j_global == i_global) THEN
                matrix%local_data(iiB, jjB) = matrix%local_data(iiB, jjB)/(2.0_dp, 0.0_dp)
             END IF
          END DO
@@ -1402,6 +1397,6 @@ CONTAINS
 
       CALL timestop(handle)
 
-   END SUBROUTINE cp_cfm_upper_to_full
+   END SUBROUTINE cp_cfm_uplo_to_full
 
 END MODULE cp_cfm_basic_linalg

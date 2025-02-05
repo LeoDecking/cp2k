@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2024 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2025 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -44,6 +44,7 @@ MODULE cp_control_types
       INTEGER, DIMENSION(2)                :: distribution_layout = 0
       INTEGER                              :: blocked = 0
    END TYPE pw_grid_option
+
 ! **************************************************************************************************
 ! \brief parameters for EMD/RTP calculations involving MO projections
 ! **************************************************************************************************
@@ -65,6 +66,7 @@ MODULE cp_control_types
    TYPE proj_mo_p_type
       TYPE(proj_mo_type), POINTER                :: proj_mo => NULL()
    END TYPE proj_mo_p_type
+
 ! **************************************************************************************************
 ! \brief Control parameters for REAL_TIME_PROPAGATION calculations
 ! **************************************************************************************************
@@ -102,6 +104,7 @@ MODULE cp_control_types
       TYPE(proj_mo_p_type), DIMENSION(:), &
          POINTER                :: proj_mo_list => NULL()
    END TYPE rtp_control_type
+
 ! **************************************************************************************************
 ! \brief Control parameters for DFTB calculations
 ! **************************************************************************************************
@@ -166,6 +169,7 @@ MODULE cp_control_types
       LOGICAL                              :: coulomb_lr = .FALSE.
       LOGICAL                              :: tb3_interaction = .FALSE.
       LOGICAL                              :: check_atomic_charges = .FALSE.
+      LOGICAL                              :: var_dipole = .FALSE.
       !
       REAL(KIND=dp)                        :: xb_radius = 0.0_dp
       REAL(KIND=dp)                        :: coulomb_sr_cut = 0.0_dp
@@ -238,6 +242,7 @@ MODULE cp_control_types
       REAL(KIND=dp)                        :: alpha0_hard = 0.0_dp
       REAL(KIND=dp)                        :: max_rad_local = 0.0_dp
    END TYPE gapw_control_type
+
 ! **************************************************************************************************
 ! \brief parameters for calculations involving a time dependent electric field
 ! **************************************************************************************************
@@ -256,6 +261,7 @@ MODULE cp_control_types
    TYPE efield_p_type
       TYPE(efield_type), POINTER           :: efield => NULL()
    END TYPE efield_p_type
+
 ! **************************************************************************************************
 ! \brief parameters for calculations involving a time dependent electric field
 ! **************************************************************************************************
@@ -487,6 +493,16 @@ MODULE cp_control_types
    END TYPE stda_control_type
 
 ! **************************************************************************************************
+! \brief Control parameters for smeared occupation
+! \par  ATTRIBUTES
+! \par  NOTES
+! **************************************************************************************************
+   TYPE smeared_type
+      REAL(KIND=dp), DIMENSION(:), POINTER :: fermia => NULL()
+      REAL(KIND=dp), DIMENSION(:, :), POINTER :: fermib => NULL()
+   END TYPE smeared_type
+
+! **************************************************************************************************
 ! \brief Control parameters for a Time-Dependent DFT calculation.
 ! **************************************************************************************************
    TYPE tddfpt2_control_type
@@ -533,12 +549,17 @@ MODULE cp_control_types
       LOGICAL                              :: rks_triplets = .FALSE.
       !> local resolution of identity for Coulomb contribution
       LOGICAL                              :: do_lrigpw = .FALSE.
+      !> smeared occupation
+      LOGICAL                              :: do_smearing = .FALSE.
       ! automatic generation of auxiliary basis for LRI-TDDFT
       INTEGER                              :: auto_basis_p_lri_aux = 1
       !> use symmetric definition of ADMM Kernel correction
       LOGICAL                              :: admm_symm = .FALSE.
       !> Use/Ignore possible ADMM Kernel XC correction
       LOGICAL                              :: admm_xc_correction = .FALSE.
+      ! Compute exciton descriptors
+      LOGICAL                              :: do_exciton_descriptors = .FALSE.
+      LOGICAL                              :: do_directional_exciton_descriptors = .FALSE.
       !
       ! DIPOLE_MOMENTS subsection
       !
@@ -576,6 +597,8 @@ MODULE cp_control_types
       !> manually provided the list of cutoff values for each grid level
       !> (when it is null(), the cutoff values will be assigned automatically)
       REAL(kind=dp), DIMENSION(:), POINTER :: mgrid_e_cutoff => NULL()
+      !> Parameter for smeared occupation TDA
+      TYPE(smeared_type), DIMENSION(:), POINTER :: smeared_occup => NULL()
    END TYPE tddfpt2_control_type
 
 ! **************************************************************************************************
@@ -672,7 +695,8 @@ MODULE cp_control_types
              expot_control_type, &
              rtp_control_type, &
              sccs_control_type, &
-             stda_control_type
+             stda_control_type, &
+             smeared_type
 
    ! Public subroutines
 

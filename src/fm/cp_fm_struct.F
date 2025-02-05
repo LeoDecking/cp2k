@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2024 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2025 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -205,7 +205,7 @@ CONTAINS
       IF (.NOT. my_force_block) THEN
          vlen = m_cpuid_vlen()
          nmax_block = (fmstruct%nrow_global + fmstruct%context%num_pe(1) - 1)/ &
-                      (fmstruct%context%num_pe(1))*fmstruct%context%num_pe(1)
+                      (fmstruct%context%num_pe(1))
          IF (1 < vlen) THEN ! flooring not ceiling (OOB)
             fmstruct%nrow_block = fmstruct%nrow_block/vlen*vlen
             nmax_block = nmax_block/vlen*vlen
@@ -213,7 +213,7 @@ CONTAINS
          fmstruct%nrow_block = MAX(MIN(fmstruct%nrow_block, nmax_block), 1)
 
          nmax_block = (fmstruct%ncol_global + fmstruct%context%num_pe(2) - 1)/ &
-                      (fmstruct%context%num_pe(1))*fmstruct%context%num_pe(2)
+                      (fmstruct%context%num_pe(2))
          IF (1 < vlen) THEN ! flooring not ceiling (OOB)
             fmstruct%ncol_block = fmstruct%ncol_block/vlen*vlen
             nmax_block = nmax_block/vlen*vlen

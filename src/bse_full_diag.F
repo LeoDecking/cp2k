@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2024 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2025 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -24,7 +24,8 @@ MODULE bse_full_diag
                                               get_oscillator_strengths
    USE bse_util,                        ONLY: comp_eigvec_coeff_BSE,&
                                               fm_general_add_bse,&
-                                              get_multipoles_mo
+                                              get_multipoles_mo,&
+                                              reshuffle_eigvec
    USE cp_blacs_env,                    ONLY: cp_blacs_env_create,&
                                               cp_blacs_env_release,&
                                               cp_blacs_env_type
@@ -474,7 +475,12 @@ CONTAINS
       ALLOCATE (Exc_ens(homo*virtual))
 
       CALL choose_eigv_solver(fm_C, fm_eigvec_Z, Exc_ens, diag_info)
-      CPASSERT(diag_info == 0)
+
+      IF (diag_info /= 0) THEN
+         CALL cp_abort(__LOCATION__, &
+                       "Diagonalization of C=(A-B)^0.5 (A+B) (A-B)^0.5 failed in BSE")
+      END IF
+
       ! C could have negative eigenvalues, since we do not explicitly check A+B
       ! for positive definiteness (would make another O(N^6) Diagon. necessary)
       ! Instead, we include a check here
@@ -588,7 +594,12 @@ CONTAINS
       ALLOCATE (Exc_ens(homo*virtual))
 
       CALL choose_eigv_solver(fm_A, fm_eigvec, Exc_ens, diag_info)
-      CPASSERT(diag_info == 0)
+
+      IF (diag_info /= 0) THEN
+         CALL cp_abort(__LOCATION__, &
+                       "Diagonalization of A failed in TDA-BSE")
+      END IF
+
       CALL postprocess_bse(Exc_ens, fm_eigvec, mp2_env, qs_env, mo_coeff, &
                            homo, virtual, homo_irred, unit_nr, .TRUE.)
 
@@ -629,11 +640,12 @@ CONTAINS
       CHARACTER(LEN=*), PARAMETER                        :: routineN = 'postprocess_bse'
 
       CHARACTER(LEN=10)                                  :: info_approximation, multiplet
-      INTEGER                                            :: handle, idir, n_moments_di, &
+      INTEGER                                            :: handle, i_exc, idir, n_moments_di, &
                                                             n_moments_quad
       REAL(KIND=dp)                                      :: alpha
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: oscill_str, ref_point_multipole
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :, :)     :: polarizability_residues, trans_mom_bse
+      TYPE(cp_fm_type)                                   :: fm_X_ia, fm_Y_ia
       TYPE(cp_fm_type), ALLOCATABLE, DIMENSION(:) :: fm_dipole_ab_trunc, fm_dipole_ai_trunc, &
          fm_dipole_ij_trunc, fm_quadpole_ab_trunc, fm_quadpole_ai_trunc, fm_quadpole_ij_trunc
       TYPE(exciton_descr_type), ALLOCATABLE, &
@@ -679,12 +691,31 @@ CONTAINS
          CALL get_multipoles_mo(fm_quadpole_ai_trunc, fm_quadpole_ij_trunc, fm_quadpole_ab_trunc, &
                                 qs_env, mo_coeff, ref_point_multipole, 2, &
                                 homo, virtual, fm_eigvec_X%matrix_struct%context)
-         CALL get_exciton_descriptors(exc_descr, fm_eigvec_X, &
-                                      fm_dipole_ij_trunc, fm_dipole_ab_trunc, fm_dipole_ai_trunc, &
-                                      fm_quadpole_ij_trunc, fm_quadpole_ab_trunc, &
-                                      homo, virtual, unit_nr, &
-                                      mp2_env, qs_env, &
-                                      fm_eigvec_Y)
+         ! Iterate over excitation index outside of routine to make it compatible with tddft module
+         ALLOCATE (exc_descr(mp2_env%bse%num_print_exc_descr))
+         DO i_exc = 1, mp2_env%bse%num_print_exc_descr
+            CALL reshuffle_eigvec(fm_eigvec_X, fm_X_ia, homo, virtual, i_exc, &
+                                  .FALSE., unit_nr, mp2_env)
+            IF (.NOT. flag_TDA) THEN
+               CALL reshuffle_eigvec(fm_eigvec_Y, fm_Y_ia, homo, virtual, i_exc, &
+                                     .FALSE., unit_nr, mp2_env)
+
+               CALL get_exciton_descriptors(exc_descr, fm_X_ia, &
+                                            fm_quadpole_ij_trunc, fm_quadpole_ab_trunc, &
+                                            fm_quadpole_ai_trunc, &
+                                            i_exc, homo, virtual, &
+                                            fm_Y_ia)
+            ELSE
+               CALL get_exciton_descriptors(exc_descr, fm_X_ia, &
+                                            fm_quadpole_ij_trunc, fm_quadpole_ab_trunc, &
+                                            fm_quadpole_ai_trunc, &
+                                            i_exc, homo, virtual)
+            END IF
+            CALL cp_fm_release(fm_X_ia)
+            IF (.NOT. flag_TDA) THEN
+               CALL cp_fm_release(fm_Y_ia)
+            END IF
+         END DO
       END IF
 
       IF (mp2_env%bse%bse_spin_config == 0) THEN
@@ -712,7 +743,10 @@ CONTAINS
                                     info_approximation, mp2_env, unit_nr)
       ! Print exciton descriptors if keyword is invoked
       IF (mp2_env%bse%num_print_exc_descr > 0) THEN
-         CALL print_exciton_descriptors(exc_descr, ref_point_multipole, unit_nr, mp2_env, qs_env)
+         CALL print_exciton_descriptors(exc_descr, ref_point_multipole, unit_nr, &
+                                        mp2_env%bse%num_print_exc_descr, mp2_env%bse%bse_debug_print, &
+                                        mp2_env%bse%print_directional_exc_descr, &
+                                        'BSE|', qs_env)
       END IF
 
       ! Compute and print excitation wavefunctions

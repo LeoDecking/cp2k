@@ -6,8 +6,8 @@
 [ "${BASH_SOURCE[0]}" ] && SCRIPT_NAME="${BASH_SOURCE[0]}" || SCRIPT_NAME=$0
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_NAME")/.." && pwd -P)"
 
-mpich_ver="4.0.3"
-mpich_sha256="17406ea90a6ed4ecd5be39c9ddcbfac9343e6ab4f77ac4e8c5ebe4a3e3b6c501"
+mpich_ver="4.2.3"
+mpich_sha256="7a019180c51d1738ad9c5d8d452314de65e828ee240bcb2d1f80de9a65be88a8"
 mpich_pkg="mpich-${mpich_ver}.tar.gz"
 
 source "${SCRIPT_DIR}"/common_vars.sh
@@ -149,6 +149,7 @@ append_path LD_LIBRARY_PATH "${pkg_install_dir}/lib"
 append_path LD_RUN_PATH "${pkg_install_dir}/lib"
 append_path LIBRARY_PATH "${pkg_install_dir}/lib"
 append_path CPATH "${pkg_install_dir}/include"
+prepend_path PKG_CONFIG_PATH "${pkg_install_dir}/lib/pkgconfig"
 EOF
   fi
   cat "${BUILDDIR}/setup_mpich" >> ${SETUPFILE}
@@ -159,6 +160,8 @@ cat << EOF >> ${INSTALLDIR}/lsan.supp
 # MPICH 3.3.2 with GCC 10.3.0
 leak:MPIR_Find_local_and_external
 leak:MPIU_Find_local_and_external
+# MPICH 4.2.3
+leak:MPL_malloc
 EOF
 
 load "${BUILDDIR}/setup_mpich"

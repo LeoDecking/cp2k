@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2024 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2025 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -397,11 +397,13 @@ MODULE mp2_types
       TYPE(cp_eri_mme_param), POINTER                    :: eri_mme_param => NULL()
       INTEGER, DIMENSION(:), POINTER                     :: eri_blksize => NULL()
       LOGICAL                                            :: do_svd = .FALSE.
+      REAL(KIND=dp)                                      :: eps_svd = -1.0_dp
       REAL(KIND=dp)                                      :: eps_range = 0.0_dp
       TYPE(libint_potential_type)                        :: ri_metric = libint_potential_type()
       TYPE(local_gemm_ctxt_type)                         :: local_gemm_ctx = local_gemm_ctxt_type()
       REAL(dp)                                           :: e_gap = 0.0_dp, &
                                                             e_range = 0.0_dp
+      LOGICAL                                            :: ri_aux_auto_generated = .FALSE.
    END TYPE mp2_type
 
    TYPE integ_mat_buffer_type

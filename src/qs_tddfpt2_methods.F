@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2024 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2025 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -81,11 +81,13 @@ MODULE qs_tddfpt2_methods
    USE qs_tddfpt2_lri_utils,            ONLY: tddfpt2_lri_init
    USE qs_tddfpt2_properties,           ONLY: tddfpt_dipole_operator,&
                                               tddfpt_print_excitation_analysis,&
+                                              tddfpt_print_exciton_descriptors,&
                                               tddfpt_print_nto_analysis,&
                                               tddfpt_print_summary
    USE qs_tddfpt2_restart,              ONLY: tddfpt_read_restart,&
                                               tddfpt_write_newtonx_output,&
                                               tddfpt_write_restart
+   USE qs_tddfpt2_smearing_methods,     ONLY: tddfpt_smeared_occupation
    USE qs_tddfpt2_soc,                  ONLY: tddfpt_soc
    USE qs_tddfpt2_stda_types,           ONLY: allocate_stda_env,&
                                               deallocate_stda_env,&
@@ -242,6 +244,11 @@ CONTAINS
       NULLIFY (gs_mos)
 
       CALL tddfpt_init_mos(qs_env, gs_mos, log_unit)
+
+      ! obtain smeared occupation numbers
+      IF (tddfpt_control%do_smearing) THEN
+         CALL tddfpt_smeared_occupation(qs_env, gs_mos, log_unit)
+      END IF
 
       ! obtain corrected KS-matrix
       CALL tddfpt_oecorr(qs_env, gs_mos, matrix_ks_oep)
@@ -568,7 +575,7 @@ CONTAINS
       tddfpt_control => dft_control%tddfpt2_control
 
       ! no k-points
-      CPASSERT(dft_control%nimages <= 1)
+      IF (dft_control%nimages > 1) CPABORT("k-points not implemented for TDDFPT")
 
       IF (tddfpt_control%nstates <= 0) THEN
          CALL integer_to_string(tddfpt_control%nstates, nstates_str)
@@ -1011,7 +1018,8 @@ CONTAINS
       CALL cp_print_key_finished_output(log_unit, logger, &
                                         tddfpt_print_section, "GUESS_VECTORS")
 
-      CALL tddfpt_orthogonalize_psi1_psi0(evects, work_matrices%S_C0_C0T)
+      CALL tddfpt_orthogonalize_psi1_psi0(evects, work_matrices%S_C0_C0T, qs_env, &
+                                          gs_mos, evals, tddfpt_control, work_matrices%S_C0)
       CALL tddfpt_orthonormalize_psi1_psi1(evects, &
                                            nstates, &
                                            S_evects, &
@@ -1156,6 +1164,15 @@ CONTAINS
                                      gs_mos, &
                                      matrix_s(1)%matrix, &
                                      tddfpt_print_section)
+      IF (tddfpt_control%do_exciton_descriptors) THEN
+         CALL tddfpt_print_exciton_descriptors( &
+            log_unit, &
+            evects, &
+            gs_mos, &
+            matrix_s(1)%matrix, &
+            tddfpt_control%do_directional_exciton_descriptors, &
+            qs_env)
+      END IF
 
       IF (tddfpt_control%do_lrigpw) THEN
          CALL lri_print_stat(qs_env, &

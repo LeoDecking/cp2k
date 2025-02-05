@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2024 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2025 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -1489,6 +1489,8 @@ CONTAINS
             qs_control%xtb_control%coulomb_lr = .FALSE.
             qs_control%xtb_control%tb3_interaction = .FALSE.
             qs_control%xtb_control%check_atomic_charges = .FALSE.
+            CALL section_vals_val_get(xtb_section, "VARIATIONAL_DIPOLE", &
+                                      l_val=qs_control%xtb_control%var_dipole)
          CASE (1)
             ! For debugging purposes
             CALL section_vals_val_get(xtb_section, "COULOMB_INTERACTION", &
@@ -1500,6 +1502,7 @@ CONTAINS
             ! Check for bad atomic charges
             CALL section_vals_val_get(xtb_section, "CHECK_ATOMIC_CHARGES", &
                                       l_val=qs_control%xtb_control%check_atomic_charges)
+            qs_control%xtb_control%var_dipole = .FALSE.
          CASE (2)
             CPABORT("gfn2-xtb tbd")
          CASE DEFAULT
@@ -1640,8 +1643,11 @@ CONTAINS
       CALL section_vals_val_get(t_section, "RESTART", l_val=t_control%is_restart)
       CALL section_vals_val_get(t_section, "RKS_TRIPLETS", l_val=t_control%rks_triplets)
       CALL section_vals_val_get(t_section, "DO_LRIGPW", l_val=t_control%do_lrigpw)
+      CALL section_vals_val_get(t_section, "DO_SMEARING", l_val=t_control%do_smearing)
       CALL section_vals_val_get(t_section, "ADMM_KERNEL_CORRECTION_SYMMETRIC", l_val=t_control%admm_symm)
       CALL section_vals_val_get(t_section, "ADMM_KERNEL_XC_CORRECTION", l_val=t_control%admm_xc_correction)
+      CALL section_vals_val_get(t_section, "EXCITON_DESCRIPTORS", l_val=t_control%do_exciton_descriptors)
+      CALL section_vals_val_get(t_section, "DIRECTIONAL_EXCITON_DESCRIPTORS", l_val=t_control%do_directional_exciton_descriptors)
 
       ! read automatically generated auxiliary basis for LRI
       CALL section_vals_val_get(t_section, "AUTO_BASIS", n_rep_val=nrep)
@@ -2725,9 +2731,9 @@ CONTAINS
                                 i_val=dft_control%rtp_control%aspc_order)
       CALL section_vals_val_get(rtp_section, "EXP_ACCURACY", &
                                 r_val=dft_control%rtp_control%eps_exp)
-      CALL section_vals_val_get(rtp_section, "RTP_METHOD", &
+      CALL section_vals_val_get(rtp_section, "RTBSE%_SECTION_PARAMETERS_", &
                                 i_val=dft_control%rtp_control%rtp_method)
-      CALL section_vals_val_get(rtp_section, "RTBSE_HAMILTONIAN", &
+      CALL section_vals_val_get(rtp_section, "RTBSE%RTBSE_HAMILTONIAN", &
                                 i_val=dft_control%rtp_control%rtbse_ham)
       CALL section_vals_val_get(rtp_section, "PROPAGATOR", &
                                 i_val=dft_control%rtp_control%propagator)

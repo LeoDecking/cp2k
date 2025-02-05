@@ -119,6 +119,11 @@ case "$with_sirius" in
       # https://github.com/electronic-structure/SIRIUS/issues/854
       sed -i'' -e '1s/.*/#include <cstdint>\n&/' src/*.hpp
 
+      # Patch SIRIUS 7.6.1 for Libxc 7.0.0
+      patch -p1 src/potential/xc_functional_base.hpp < ${SCRIPT_DIR}/stage8/sirius_libxc7.patch
+      # Patch SIRIUS 7.6.1 for pugixml (CMake)
+      patch -p1 cmake/sirius_cxxConfig.cmake.in < ${SCRIPT_DIR}/stage8/sirius_1050.patch
+
       rm -Rf build
       mkdir build
       cd build
@@ -142,7 +147,7 @@ case "$with_sirius" in
         EXTRA_CMAKE_FLAGS="-DSIRIUS_USE_VDWXC=OFF ${EXTRA_CMAKE_FLAGS}"
       fi
       if [ -n "${MKL_LIBS}" ]; then
-        EXTRA_CMAKE_FLAGS="-DSIRIUS_USE_MKL=ON -DMKL_DEF_LIBRARY=${MKLROOT}/lib/intel64 -DSIRIUS_USE_SCALAPACK=ON ${EXTRA_CMAKE_FLAGS}"
+        EXTRA_CMAKE_FLAGS="-DSIRIUS_USE_MKL=ON ${EXTRA_CMAKE_FLAGS}"
       fi
       SpFFT_DIR="${SpFFT_ROOT}/lib/cmake/SpFFT"
       SpLA_DIR="${SpLA_ROOT}/lib/cmake/SPLA"

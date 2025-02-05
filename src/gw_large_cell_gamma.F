@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2024 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2025 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -16,7 +16,7 @@ MODULE gw_large_cell_gamma
                                               get_cell,&
                                               pbc
    USE constants_operator,              ONLY: operator_coulomb
-   USE cp_cfm_basic_linalg,             ONLY: cp_cfm_upper_to_full
+   USE cp_cfm_basic_linalg,             ONLY: cp_cfm_uplo_to_full
    USE cp_cfm_cholesky,                 ONLY: cp_cfm_cholesky_decompose,&
                                               cp_cfm_cholesky_invert
    USE cp_cfm_diag,                     ONLY: cp_cfm_geeig
@@ -894,7 +894,7 @@ CONTAINS
          ! successful Cholesky decomposition
          CALL cp_cfm_cholesky_invert(cfm_M_inv_ikp)
          ! symmetrize the result
-         CALL cp_cfm_upper_to_full(cfm_M_inv_ikp)
+         CALL cp_cfm_uplo_to_full(cfm_M_inv_ikp)
       ELSE
          ! Cholesky decomposition not successful: use expensive diagonalization
          CALL cp_cfm_power(cfm_work, threshold=bs_env%eps_eigval_mat_RI, exponent=-1.0_dp)
@@ -968,8 +968,8 @@ CONTAINS
          t1 = m_walltime()
          CALL fm_read(bs_env%fm_W_MIC_freq_zero, bs_env, "W_freq_rtp", 0)
          IF (bs_env%unit_nr > 0) THEN
-            WRITE (bs_env%unit_nr, '(T2,A,I5,A,I3,A,F7.1,A)') &
-               'Read W^MIC(w=0) from file for frequency point  ', 1, ' /', 1, &
+            WRITE (bs_env%unit_nr, '(T2,A,I3,A,I3,A,F7.1,A)') &
+               'Read W^MIC(f=0) from file for freq. point  ', 1, ' /', 1, &
                ',    Execution time', m_walltime() - t1, ' s'
          END IF
       END IF
@@ -1068,9 +1068,8 @@ CONTAINS
       CALL dbcsr_deallocate_matrix_set(mat_chi_Gamma_tau)
 
       ! Marek : Fourier transform W^MIC(itau) back to get it at a specific im.frequency point - iomega = 0
-      ! TODO : Should this be activeted here or somewhere else? Maybe directly in the main (gw) routine?
-      ! Create the matrix TODO: Add release statement in some well understood place - at destruction of bs_env?
       IF (bs_env%rtp_method == rtp_method_bse) THEN
+         t1 = m_walltime()
          CALL cp_fm_create(bs_env%fm_W_MIC_freq_zero, bs_env%fm_W_MIC_freq%matrix_struct)
          ! Set to zero
          CALL cp_fm_set_all(bs_env%fm_W_MIC_freq_zero, 0.0_dp)
@@ -1082,6 +1081,13 @@ CONTAINS
          END DO
          ! Done, save to file
          CALL fm_write(bs_env%fm_W_MIC_freq_zero, 0, "W_freq_rtp", qs_env)
+         ! Report calculation
+         IF (bs_env%unit_nr > 0) THEN
+            WRITE (bs_env%unit_nr, '(T2,A,I11,A,I3,A,F7.1,A)') &
+               'Computed W(f=0,k) for k-point batch', &
+               1, ' /', 1, &
+               ',    Execution time', m_walltime() - t1, ' s'
+         END IF
       END IF
 
       IF (bs_env%unit_nr > 0) WRITE (bs_env%unit_nr, '(A)') ' '
@@ -1434,7 +1440,7 @@ CONTAINS
 
       ! 2. b) Inversion of ε(iω_j,k) using its Cholesky decomposition
       CALL cp_cfm_cholesky_invert(cfm_eps_ikp_freq_j)
-      CALL cp_cfm_upper_to_full(cfm_eps_ikp_freq_j)
+      CALL cp_cfm_uplo_to_full(cfm_eps_ikp_freq_j)
 
       ! 2. c) ε^-1(iω_j,k)-Id
       CALL cfm_add_on_diag(cfm_eps_ikp_freq_j, -z_one)

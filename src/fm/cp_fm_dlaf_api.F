@@ -1,13 +1,13 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2024 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2025 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 MODULE cp_fm_dlaf_api
 
-   USE cp_fm_basic_linalg, ONLY: cp_fm_upper_to_full
+   USE cp_fm_basic_linalg, ONLY: cp_fm_uplo_to_full
    USE cp_fm_types, ONLY: cp_fm_type
    USE kinds, ONLY: dp
 #include "../base/base_uses.f90"
@@ -174,7 +174,7 @@ CONTAINS
 #if defined(__DLAF)
       ! DLAF needs the lower triangular part
       ! Use eigenvectors matrix as workspace
-      CALL cp_fm_upper_to_full(matrix, eigenvectors)
+      CALL cp_fm_uplo_to_full(matrix, eigenvectors)
 
       n = matrix%matrix_struct%nrow_global
 
@@ -281,8 +281,8 @@ CONTAINS
 #if defined(__DLAF)
       ! DLAF needs the lower triangular part
       ! Use eigenvectors matrix as workspace
-      CALL cp_fm_upper_to_full(a_matrix, eigenvectors)
-      CALL cp_fm_upper_to_full(b_matrix, eigenvectors)
+      CALL cp_fm_uplo_to_full(a_matrix, eigenvectors)
+      CALL cp_fm_uplo_to_full(b_matrix, eigenvectors)
 
       n = a_matrix%matrix_struct%nrow_global
 

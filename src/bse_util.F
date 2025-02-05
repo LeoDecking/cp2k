@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2024 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2025 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -25,7 +25,7 @@ MODULE bse_util
                                               dbcsr_allocate_matrix_set,&
                                               dbcsr_deallocate_matrix_set
    USE cp_fm_basic_linalg,              ONLY: cp_fm_trace,&
-                                              cp_fm_upper_to_full
+                                              cp_fm_uplo_to_full
    USE cp_fm_cholesky,                  ONLY: cp_fm_cholesky_decompose,&
                                               cp_fm_cholesky_invert
    USE cp_fm_struct,                    ONLY: cp_fm_struct_create,&
@@ -154,13 +154,15 @@ CONTAINS
       ! calculate Trace(Log(Matrix)) as Log(DET(Matrix)) via cholesky decomposition
       CALL cp_fm_cholesky_decompose(matrix=fm_mat_Q_static_bse_gemm, n=dimen_RI, info_out=info_chol)
 
-      CPASSERT(info_chol == 0)
+      IF (info_chol /= 0) THEN
+         CALL cp_abort(__LOCATION__, 'Cholesky decomposition failed for static polarization in BSE')
+      END IF
 
       ! calculate [1+Q(i0)]^-1
       CALL cp_fm_cholesky_invert(fm_mat_Q_static_bse_gemm)
 
       ! symmetrize the result
-      CALL cp_fm_upper_to_full(fm_mat_Q_static_bse_gemm, fm_work)
+      CALL cp_fm_uplo_to_full(fm_mat_Q_static_bse_gemm, fm_work)
 
       CALL parallel_gemm(transa="N", transb="N", m=dimen_RI, n=homo**2, k=dimen_RI, alpha=1.0_dp, &
                          matrix_a=fm_mat_Q_static_bse_gemm, matrix_b=fm_mat_S_ij_bse, beta=0.0_dp, &
@@ -1542,7 +1544,7 @@ CONTAINS
           mp2_env%bse%num_print_exc > homo*virtual) THEN
          mp2_env%bse%num_print_exc = homo*virtual
          IF (unit_nr > 0) THEN
-            CALL cp_warn(__LOCATION__, &
+            CALL cp_hint(__LOCATION__, &
                          "Keyword NUM_PRINT_EXC is either negative or too large. "// &
                          "Printing all computed excitations.")
          END IF
@@ -1558,7 +1560,7 @@ CONTAINS
          IF (mp2_env%bse%explicit_nto_list) THEN
             IF (mp2_env%bse%num_print_exc_ntos > 0) THEN
                IF (unit_nr > 0) THEN
-                  CALL cp_warn(__LOCATION__, &
+                  CALL cp_hint(__LOCATION__, &
                                "Keywords NUM_PRINT_EXC_NTOS and STATE_LIST are both given in input. "// &
                                "Overriding NUM_PRINT_EXC_NTOS.")
                END IF
@@ -1574,7 +1576,7 @@ CONTAINS
             END DO
             IF (num_state_list_exceptions > 0) THEN
                IF (unit_nr > 0) THEN
-                  CALL cp_warn(__LOCATION__, &
+                  CALL cp_hint(__LOCATION__, &
                                "STATE_LIST contains indices outside the range of included excitation levels. "// &
                                "Ignoring these states.")
                END IF
@@ -1619,7 +1621,7 @@ CONTAINS
       IF (mp2_env%bse%num_print_exc_descr < 0 .OR. &
           mp2_env%bse%num_print_exc_descr > mp2_env%bse%num_print_exc) THEN
          IF (unit_nr > 0) THEN
-            CALL cp_warn(__LOCATION__, &
+            CALL cp_hint(__LOCATION__, &
                          "Keyword NUM_PRINT_EXC_DESCR is either negative or too large. "// &
                          "Printing exciton descriptors up to NUM_PRINT_EXC.")
          END IF
