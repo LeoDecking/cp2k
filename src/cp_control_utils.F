@@ -519,7 +519,7 @@ CONTAINS
          IF (SIZE(pol) > 1 .OR. pol(1) /= 0.0_dp) THEN
             ! if INTENSITY_LIST is present, INTENSITY must not be present
             IF (dft_control%period_efield%strength /= 0.0_dp) THEN
-               CPABORT("[PERIODIC FIELD] Only one of INTENSITY or INTENSITIES can be specified.")
+               CPABORT("[PERIODIC FIELD] Only one of INTENSITY or INTENSITY_LIST can be specified.")
             END IF
 
             ALLOCATE(dft_control%period_efield%strength_list(SIZE(pol)))
