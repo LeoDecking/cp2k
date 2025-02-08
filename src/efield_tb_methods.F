@@ -106,7 +106,7 @@ CONTAINS
             CALL efield_tb_local(qs_env, ks_matrix, rho, mcharge, energy, calculate_forces, just_energy)
          ELSE IF (dft_control%apply_efield_field) THEN
             CPABORT("efield_filed")
-         END IF
+         END IF if_apply
       ELSE
          CPABORT("This routine should only be called from TB")
       END IF
@@ -331,7 +331,7 @@ CONTAINS
       strength = dft_control%period_efield%strength
       IF (ALLOCATED(dft_control%period_efield%strength_list)) THEN
          strength = dft_control%period_efield%strength_list(MOD(qs_env%sim_step &
-                     - dft_control%period_efield%start_frame, SIZE(dft_control%period_efield%strength_list)) + 1)
+                                        - dft_control%period_efield%start_frame, SIZE(dft_control%period_efield%strength_list)) + 1)
       END IF
 
       fieldpol = dft_control%period_efield%polarisation
@@ -672,7 +672,7 @@ CONTAINS
       strength = dft_control%period_efield%strength
       IF (ALLOCATED(dft_control%period_efield%strength_list)) THEN
          strength = dft_control%period_efield%strength_list(MOD(qs_env%sim_step &
-                     - dft_control%period_efield%start_frame, SIZE(dft_control%period_efield%strength_list)) + 1)
+                                        - dft_control%period_efield%start_frame, SIZE(dft_control%period_efield%strength_list)) + 1)
       END IF
 
       fieldpol = dft_control%period_efield%polarisation

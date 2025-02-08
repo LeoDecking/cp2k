@@ -124,7 +124,7 @@ CONTAINS
          ! check if the periodic efield should be applied in the current step
          IF (dft_control%period_efield%start_frame > qs_env%sim_step) EXIT if_apply
          IF (dft_control%period_efield%end_frame /= -1 .AND. &
-            dft_control%period_efield%end_frame < qs_env%sim_step) EXIT if_apply
+             dft_control%period_efield%end_frame < qs_env%sim_step) EXIT if_apply
 
          IF (s_mstruct_changed) CALL qs_efield_integrals(qs_env)
          IF (dft_control%period_efield%displacement_field) THEN
@@ -255,14 +255,11 @@ CONTAINS
          CPABORT("Stress tensor for periodic E-field not implemented")
       END IF
 
-
       strength = dft_control%period_efield%strength
       IF (ALLOCATED(dft_control%period_efield%strength_list)) THEN
          strength = dft_control%period_efield%strength_list(MOD(qs_env%sim_step &
-                     - dft_control%period_efield%start_frame, SIZE(dft_control%period_efield%strength_list)) + 1)
+                                        - dft_control%period_efield%start_frame, SIZE(dft_control%period_efield%strength_list)) + 1)
 
-         ! TODO: remove
-         write(*, "(A, I0, A, F20.10)") "[PERIODIC FIELD] Step: ", qs_env%sim_step, " Periodic field strength: ", strength
       END IF
 
       fieldpol = dft_control%period_efield%polarisation
@@ -692,10 +689,8 @@ CONTAINS
                                                             npgfb, nsgfa, nsgfb
       INTEGER, DIMENSION(:, :), POINTER                  :: first_sgfa, first_sgfb
       LOGICAL                                            :: found, uniform, use_virial
-      REAL(dp)                                           :: charge, ci(3), cqi(3), dab, dd, di(3), &
-                                                            ener_field, fab, fieldpol(3), focc, &
-                                                            hmat(3, 3), occ, omega, qi(3), &
-                                                            rlog(3), strength, zlog(3)
+      REAL(dp) :: charge, ci(3), cqi(3), dab, dd, di(3), ener_field, fab, fieldpol(3), focc, &
+         hmat(3, 3), occ, omega, qi(3), rlog(3), strength, zlog(3)
       REAL(dp), DIMENSION(3)                             :: dfilter, forcea, forceb, kvec, ra, rab, &
                                                             rb, ria
       REAL(dp), DIMENSION(:, :), POINTER                 :: cosab, iblock, rblock, sinab, work
@@ -753,7 +748,7 @@ CONTAINS
       strength = dft_control%period_efield%strength
       IF (ALLOCATED(dft_control%period_efield%strength_list)) THEN
          strength = dft_control%period_efield%strength_list(MOD(qs_env%sim_step &
-                     - dft_control%period_efield%start_frame, SIZE(dft_control%period_efield%strength_list)) + 1)
+                                        - dft_control%period_efield%start_frame, SIZE(dft_control%period_efield%strength_list)) + 1)
       END IF
 
       fieldpol = dft_control%period_efield%polarisation
