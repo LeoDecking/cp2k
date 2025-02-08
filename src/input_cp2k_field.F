@@ -108,7 +108,7 @@ CONTAINS
 
       CALL keyword_create(keyword, __LOCATION__, name="START_FRAME", &
                           description="First frame the field is applied. "// &
-                          "(1: first frame)"// &
+                          "(1: first frame) "// &
                           "Attention: ignored for eeq", &
                           usage="start_frame 1", &
                           default_i_val=1)
