@@ -1986,13 +1986,13 @@ CONTAINS
                   SIZE(dft_control%period_efield%strength_list)
 
                WRITE (UNIT=output_unit, FMT="(T2,A,I10,T66,1X,ES14.6)") &
-                  "PERIODIC_EFIELD| Intensity List [a.u.], ", &
-                  0, dft_control%period_efield%strength_list(1)
+                  "PERIODIC_EFIELD| Intensity List [a.u.] ", &
+                  1, dft_control%period_efield%strength_list(1)
 
                DO i = 2, SIZE(dft_control%period_efield%strength_list)
                   WRITE (UNIT=output_unit, FMT="(T2,A,I10,T66,1X,ES14.6)") &
                      "PERIODIC_EFIELD|                        ", &
-                     i - 1, dft_control%period_efield%strength_list(i)
+                     i, dft_control%period_efield%strength_list(i)
                END DO
             ELSE
                WRITE (UNIT=output_unit, FMT="(T2,A,T66,1X,ES14.6)") &
